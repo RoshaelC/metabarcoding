@@ -1,0 +1,99 @@
+---
+title: "A8 - Metabarcoding"
+author: "Roshael Chellappah (20103016)"
+date: "16/03/2022"
+output: html_document
+---
+
+GitHub Repository: https://github.com/RoshaelC/metabarcoding
+
+The purpose of this assignment is to examine how communities of plants differ across sample locations. Using information gathered by a former Queen's MSc student, we are hoping to answer the following biological questions:
+
+1. What effect (if any) does garlic mustard have on the plant community?
+
+2. What has a stronger effect on plant communities: the presence/absence of garlic mustard (in/out) or sampling population?
+
+## Load Data
+```{r}
+library(ggplot2)
+library(ape)
+library(ggtree)
+library(vegan)
+```
+
+```{r}
+Data <- read.csv("./FloristicSurvey.csv", fileEncoding="UTF-8-BOM", header = T)
+```
+
+# Question 1
+To find an answer to the first biological question, I will compare the relationship between the presence/absence of garlic mustard to the composition of the various plant species within the different communities.
+```{r}
+Data2 <- Data[,c(1, 11:43)] # isolate the quadrate and plant species columns into new data frame
+
+# make quadrate column into row names
+Data3 <- Data2[,-1]
+rownames(Data3) <- Data2[,1]
+
+# transpose the data frame
+MyData <- as.data.frame(t(Data3))
+
+# Distance Matrix
+MyData_bin <- MyData
+
+MyData_bin[MyData_bin > 0] <- 1
+MyData_dist <- dist(MyData_bin, method = 'binary')
+
+MyDataDistMat <- as.matrix(MyData_dist)
+
+MyData_tree <- nj(MyDataDistMat)
+ggtree(MyData_tree, layout = "rectangular") + geom_tiplab()
+```
+
+Although I've been able to visualize the distance matrix, I am unable to show which plants are clustered with which sample locations. This is likely because there is an overlap between the plants found within each location, though I am unsure how to troubleshoot this problem. Ultimately, I would want to show that garlic mustard plants impact the composition of plant species within locations that it inhabits, but I am facing many challenges in understanding and implementing code that could help me demonstrate this. 
+
+I have tried creating a secondary dataset, similar to the SamplesInfo.csv file that was used in tutorial, to potentially help in clustering the various nodes from the distance visualization together, and this is shown below. However, it seems that this does not work either. 
+
+```{r}
+# Binary Distance Matrix
+SampleLocations <- read.csv("./A8_Roshael_Chellappah - Locations.csv", fileEncoding="UTF-8-BOM") # secondary dataset grouping the various quadrates within locations (i.e., all 7o and 7i quadrants are from location/population 7)
+
+#NJ
+MyData_tree <- nj(MyDataDistMat)
+ggtree(MyData_tree, layout = "rectangular") %<+% SampleLocations +
+  geom_tiplab(aes(colour = Location)) +
+  theme(legend.position = "right")
+```
+
+
+```{r}
+MyData_dist <- vegdist(MyData, method = "bray", binary= F)
+MyDtaa_tree <- nj(MyData_dist)
+
+
+#NMDS
+set.seed(13)
+NMDSdat <- metaMDS(MyData_dist, k = 2) #k=2 dimensions
+
+NMDSdat <- metaMDS(MyData_dist, k = 2, trymax = 100)
+
+## Create data for plotting 
+PDAT <- data.frame(NMDS1 = NMDSdat$points[,1],
+                   NMDS2 = NMDSdat$points[,2],
+                   SampleID = row.names(MyData))
+
+
+
+# PDat <- merge(PDAT, SampleLocations, by = "Quadrate", all.x = T, all.y = F)
+#### maybe need to create a separate data file with the various plant species instead of the sample locations???
+
+
+# qplot(x = NMDS1, y = NMDS2, colour = Locations, alpha = I(0.6), data = PDat)
+#### code does not work with sample locations document
+
+```
+
+# Question 2
+To answer this second question, I need to understand the information found in the analysis for question 1 (understanding the correlation between the presence/absence of garlic mustard on the plant community composition) as well as the correlation between the sampling population and the plant community.
+
+
+After trying to work through this assignment, I continue to get stuck with visualizing my data and showing whether there is a correlation between the presence/absence of garlic mustard plants and the composition of plant species within the sample location. I believe that I understand the concept of what information is needed to answer the research questions but I am facing a lot of trouble in getting the code to work. I will need to take more time to fully understand the code and how to use it in settings outside of the tutorials. Unfortunately, I feel that this is all I am able to complete for now, and would prefer to submit this assignment as is than nothing at all. 
